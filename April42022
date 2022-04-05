@@ -1,0 +1,57 @@
+
+April 4, 2022
+
+BIVARIATE ORDINAL LEAST SQUARES
+What is Regression?
+  Regression is the practice of line-fitting
+  The idea to characterize the relationship between X (Independent Variable) and Y (Dependent Variable) as a shape to predict Y 
+ Example Relationships/Correlations: Positive (slope > 0), Negative (slope < 0), Linear by measure of Slope, Exponential
+ 
+ Data is Granular: meaning we should simplify a relationship between X and Y into a 'shape' so that there is a 'smooth relationship'
+  Such as making a linear line relationship, but by adding a line, we are necessarily simplifying our presentation of the data
+  Which also means tossing our information. This isn't a bad thing, since we do a better job predicting and interpreting data, avoiding overfitting
+  If we assume correctly what we can get out of the data would be immense, but assuming wrongly would give us garbage information
+  
+ - Linear Regression -
+The line the we get is the 'fit' of our model
+A model 'fit' means we've taken a shape that best first out data set
+We can use that line to plug a value X to predict Y by creating a formula
+  Y = 3 + 4 * X
+  when X is 0, Y is 3 // when X is 1, Y is 7
+CHANT : A one-unit increase in variable (X) is associated with a (coefficient) unit change in outcome (Y)
+The word 'Associates' does not assume that X causes Y 
+
+- Predictions and Residuals -
+Whenever you make a prediction of any kind, you rarely get it exactly right, the difference between the predicition and actual data is the 'residual'
+So really the correct relationships would look something like this
+  Y = 'intercept' + 'slope' * 'variable' + 'residual'
+We want to pick a good predictor shape that makes the residual value as small as possible
+In particular, we're going to square those residuals, so the really big residuals/errors are even more notibly worse
+  Since we don't want to have points that are super far away from the line
+  So a bad residual of 8 may seem to be only 8 values worse but once we square it, its 64 values worse than the realistic value...
+We pick a line to minimize those squared residuals (ORDINAL LEAST SQUARES), minimizing the SUM OF SQUARED RESIDUALS
+
+- Terminology Sidenote -
+Intercept : Beta 0, Coefficient : Beta 1, Residual/Error : Epselon (greek letters)
+When we put a hat '^' on any greel letter/symbol, then we are saying this is an estimation of the truth (greek letter/symbol without '^')
+
+^Beta 1 = Cov(X,Y)/Var(X) = (X'X)^-1 * (X'Y)
+^Beta 0 = What it needs to be so that average ^Y = average of X
+
+We want to minimize squared residuals rather than just residuals?
+  Makes all residuals positive therefore avoiding overshooting and undershooting
+  Alleviates all the outliers
+Difference between Residual and Error
+  The difference betweent the actual and the model is a Residual but the Error is every other variable that could affect the model but isn't a part of it
+
+* Concept Practice
+Model : Height(Inches) = 18 + 2 * Age
+Darryl (10 years old and 40 inches tall) and Bijetri (9 Years old and 37 inches tall)
+a) Predicted Values
+  Darryl = 38 Inches, Bijetri = 36 Inches
+b) Residuals and Sum of their Squared Residuals
+  Darryl = 2 Inches, Bijetri = 1 Inches
+  Sum of Squared Residuals = 5 Inches
+  
+Ordinary Least Squares is built in to R using the lm() function
+  
