@@ -1,0 +1,52 @@
+ORDINARY LEAST SQUARES - VARIATION
+
+- Error Term -
+  We have an idea of the true relationship Y = Beta 0 + Beta 1 * X + e
+  We also call that relationship the data-generating process: which expains where our Y observations come from
+  Estimating OLS is to get an estimate of ^Beta 0 that's as close to Beta 0 as possible
+  The two main sources of error:
+    'Sampling Variation' which is random : possibilities of data are endless
+    'Bias' which is systematic : even though we may have all the data is provided, the problem is in the configuration and algorithm
+  What assumptions do we make about the error term?
+    The error term contains everything that isn't in the model
+      - Therefore is a function is pure, then there wouldn't be an error term because the model describes the relationship perfectly
+      - eg. Y is 'Height in Feet', X is 'Height in Inches'
+      What the error term is describing in a model will depend on what our goal is, as sometime it could be bad
+      If the model were to predict a Y with many complex variables, then the model would possibly be bad
+    The most important assumption about the error term is that it is unrelated to X
+      If X and E are correlated, then ^Beta 1 would be biased, where the distribution would no longer have the true Beta 1 as its mean
+      In these cases we say that X is 'Enogenous' or 'we have omitted variable bias'
+  
+  Endogeneity
+    Importantly a single estimate beig off isn't necessarily a concern
+    But if we do that exact same analysis 500 times, then put them together in a distribution then we would definitely have bias through endogeneity
+
+  Sampling Variation
+    True Relationship/data generating process represent the underlying process where we see X and Y being related to each other
+    We can never see all the data, and so we must resort to sampling
+    Number of Observations and the Effects
+      As N of observations go up, the distribution gets a lot cleaner
+      More of the weight gathers around the true value (assuing we are unbiased)
+      Bigger Samples are better, but it isn't impossible to predict with small samples, we just need many tests
+    Variation often follow a normal distribution due tot the 'central limit theroem'
+        E (x - ^x) (Y - ^Y) / N = average
+      The mean of the distribution should be the true value of Beta 1 and Beta 0, assuming we are unbiased
+      Standard Deviation of the Sampling Distribution = Standard Error :: Std of Error (E) - > Sigma Symbol
+        - Determinants of Std. : Based on Quality of Prediction, Sample Size, and Variance in X (more is better)
+     The Distribution of an OLS Coefficient is:
+      ^B ~ N(B, ^Sigma/root(N * var(x))
+
+  Omitted Variable Bias
+   We can intuitively think about wether omitted variable bias is likely to make our estimates too high or too low
+    The sign of Bias is the relationship between the omitted variable and X, multipled by the relationship between the omitted variable bias and Y
+    Precisely we have that the mean of the ^Beta 1 sampling distribution is 
+     Beta 1 + corr(X, E) * (sigma E/ sigma X)
+   Thinking through this Bias, if Z hangs around X but Y doesn't know about it, then the coefficient on X will get all the credit for Z
+   If Z is unrelated to X then leaving it out, will not be considered as Bias
+   
+ Less Serious Error Concerns
+  'Heteroskedasticity' : Variance of the error term is different for different values of X
+    We can correct this using heteroskedasticity-robust standard errors, which 'squashes down' the big variances and then re-estimates the std. error
+    Using [feols(Y~X, data = tb, vcov = 'hetero'] the vcov = 'hetero' function
+  Clustered errors
+    Cluster-robust standard errors 
