@@ -52,5 +52,3 @@ b) Residuals and Sum of their Squared Residuals
   Darryl = 2 Inches, Bijetri = 1 Inches
   Sum of Squared Residuals = 5 Inches
   
-Ordinary Least Squares is built in to R using the lm() function
-  
