@@ -1,3 +1,70 @@
 
 HYPOTHESIS TESTING
 
+Consistency : As the sample size increases, the sampling distribution should narrow around the true value
+
+Difference between Truth and Reality
+  Impossible to uncover the true data generating process
+  Hypothesis testing is one of the ways to get an estimate of the truth
+    - It works by subtraction
+    - We test whether certain versions of the truth are likely/unlikely
+  DATA > CALCULATION > ESTIMATE > HOPEFULLY THE TRUTH
+
+Null and Alternative Hypotheses
+  The 'null hypthesis' is the version of the truth we're testing to see whether we can prove it's wrong
+    - The key question that a hypothesis test asks: "given this null distribution, how unlikely is it that we get the result we get?"
+    - If it's super unlikely that the null is true and we get our result... the null must be the part that's wrong!
+    - We reject the null! When the sampling distribution under the null hardly ever produces a result like ours, that's the wrong sampling distibution
+    - Null Distribution : The distribution is true version that describes the sampling shape of the null
+  The 'alternative hypothesis' is every version of the truth that's not the null hypothesis
+  
+P values
+  When is it weird enough to reject the null?
+  Is the probability of getting a result as-weird-as-we-actually-got or weirder under the assumption that the null is true
+  The LOWER the p-value, the less likely it is that we got our result AND the null is true
+  How low does the P-value need to be to reject the Null Hypothesis?
+    - It is common to decide on a confidence level and a corresponding alpha, most commonly 95% (alpha = 0.05), and reject the null if p-value < alpha
+    - 95% is completely an arbitrary choice, there is no reason fo rwhy it has to be a = .05 and not .04 or .06
+    - get familiar with teh concept of rejecting the null when the p-value is lower than .05 because you'll see it
+  Statistical Power: True Positives / (True Positives + False Negatives)
+    - Based on Sample Size, Precision, and How Small the Violation is
+    Since 5% of the time, you'll get a p-value below .05 even if the null is true, because of sampling variation, this is 'falsely positive'
+    So why not just pick a super low confidence level so we don't have false positives?
+    
+  True Positive : False Null & Reject Null
+  False Positive : True Null & Reject Null
+  True Negative : True Null & Fail to Reject
+  False Negative : False Null & Fail to Reject
+  
+  Example: We observe a statistically significant result, what can we infer about that?
+    2 ways, True Positives and False Positive
+    P (Null False) = True Positive / (alpha + True Positive)
+    
+  Practice:
+  There is a 7% Chance that the outcome of the of the test could be as far as the value 3.5 or further
+  Underpowered study: their study doesn't have enough statistical power
+ 
+Describing Uncertainty
+  The purpose of all of this is to avoid inferential error. That doesn't necessarily mean we need an up-or-down rejection of a null hypothesis.
+  Instead of centering around a null hypothesis, these will focus on the estimate we have and think about sampling variation around that estimate
+  
+ Confidence Intervals
+  Rather than 'Is our estimate close to the null?' we ask "Is that null close to our estimate?"
+  We can go one step further and ask "Which Nulls are close to our estimate?"
+  A confidence interval shows the range of nulls that would not be rejected by our estimate meaning outside of the range = reject
+    ^Beta 1 +- Z(s.e)
+    where Z is some critical value from our distribution that gives us the 1 - alpha percentile for a 95% confidence interval with a normal Sample. Dist.
+    Z is often -1.96 and +1.96
+  Standard Error is the Standard Deviation of the Estimate's Sampling Distribution
+  
+  Practice:
+  We perform an estimate of ^Beta 1 and get a 95% confidence interval of [-1.3, 2.1]. Describe what this means in a sentence.
+  - We have 95% confidence level that the estimated null value that shouldn't be rejected lies between the -1.3 to 2.1 value range
+  So should we reject the null of Beta 1 = 0?
+  - No because its in the range
+  
+  Applied Practice:
+  Check P-Value: We can't reject because P Value of Estimate is 0.00 which is < P value 0.05 or too small to tell
+  Confidence Interval : [-0.1188, -0.0002]
+  Figure out how much shaded area is to the left of 0.06: 2 Standard Deviations away from 0 which means around 2.5%
+  
