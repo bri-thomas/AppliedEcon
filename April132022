@@ -1,0 +1,470 @@
+
+APPLYING HYPOTHESIS TESTING
+
+Null Distribution
+  Hypothesis testing centers around the concept of the sampling distribution and, further, the null distribution
+  Key Assumption : Parameters that have a normal sampling distribution follow a normal distribution
+    We have to have an idea of what the null distribution of our parameter is in order to figure out how weird our result is
+  
+  The Normal Null
+    When an estimate ^Beta 1, that follows a normal distribution, we know:
+      - The sampling distribution is symmetric
+      - Can be wider or narrower depending on the standard error
+      - Can also be transfored into a "standard normal" (mean 0 and standard devation 1) by subtracting the mean and dividing by the std. dev. 
+    Standard Normal
+      When evaluating an estimate like ^Beta 1 we will transform it into a Z-score, which is
+         [^Beta1 - Null] / [standard error of ^Beta1]
+      We subtract our null hypothesis value and divide by the standard error
+      The Z-score is our test statistic
+    Why do this transformation? Because the sampling distirbution of Z assuming the null is true is a normal with mean Null and standard error s.e.(Beta1)
+    Subtracting mean of the sampling distribution (null) and dividing by standard deviation of the smapling distribution (s.e (Beta1)) = null distribution
+    For a standard normal the critical values (Z-Score) are as follows:
+      - 10%, Z = -1.65, +1.65
+      - 5%, Z = -1.96, +1.96
+      - 1%, Z = -2.58, +2.58
+    To work out if a coefficient of X is significant result or not, check by dividing the coefficient of X by the Standard Error ()
+      - at 10%, if the result is above 1.65 then it is significant
+      - at 5%, if the result is above 1.95 then it is significant
+      - at 1%, if the result is above 2.58 then it is significant
+    When Not to use the Normal Distribution
+      - Small Samples, but that depends on what the question is (0-30 observation is definitely small, 100+ probably not small, 30-100 is grey area)
+      - Things that aren't means, like ratios
+     
+    In these cases, what can we do instead?
+  
+  The t-distribution
+    Very similar to the Normal distribution, except that it applies to means of smaller sample sizes
+      Instead of a mean and s.d. it has a number of degrees of freedom that determines how wide it is
+    When you have fewer observations you're more likely to get a mean that's far from the true mean, i.e. "Fatter Tails"
+      For smaller samples, it's a good idea to use the vritical value from a t distribution than from a normal
+    The way to find the critical values of the t-distribution can be found in a function that measures the promotion of the distribution
+    
+    R Code
+    qt(.025, df = 28)
+    ## [1] -2.048407
+(psst... we could have also done that with the normal: qnorm(.025) = -1.959964)
+
+    Small Samples also make it harder to detect small effects
+      Tiny Effects need big samples to have power and estimate effects precisely
+      Big effect are easy to find with small observations and sample sizes
+      
+  The F distribution
+    Another null distribution that comes up a lot is the F distribution
+    Is a Distribution of the ratio of two squared normal variables (or the ratio of two sums of squared normal variables), the ratio of two X^2 variables
+    Ratios (with unbounded denominators) are the 'Boogeyman of Statistics'
+    - The Ratio is really looking at the two degrees of freedom from the two squared variables
+    - How many squared terms are being added in each square variables
+    Why does this come up? Because it's useful for comparing models
+      - THe squared normal variable to measure some quality of a model, we can compare models by dividing one measur eby the other
+      - Ex. Sum of Squared Residuals : Er^2 of first model, compared to some other sum of Squared Residuals : Er^2 of other model
+      - Null is when Er1^2 = Er2^2
+    F distribution is defined by two degrees of freedom, for the numnber of squared normals in the numerator and denominator, respectively
+    When we're doing a comparison of models, these degrees of freedom will be based on how many parameters are being comapred and the sample size
+    When we use the F distribution to do a test of a single regression coefficient
+    We're comparing the model with the variable included against the model without it included (i.e. Y = Beta0 + Beta1X vs Y = Beta0)
+    
+    Exercise:
+    Test if the mean of X is equal to 3 or not, from a sample of 25 observations. Which test should I use and how should you calculate the test statistics?
+    Estimated X values = 3.25, and S.E. = 4
+    - We use T test, t statistic = ^Beta0 - null = s.e(^Beta0), (3.25 - 3) / 4 = .25/4 = 1/16
+    
+
+----------------------
+
+Swirl Practice Results
+
+  |=============                                                                                                          |  11%
+| Let's create some data for which we know "the truth".
+| 
+| Copy-paste this in:
+| 
+| # create the data with tibble() and mutate()
+| 
+| df <- tibble(X = runif(300)) %>% mutate(Y = 5 + 3*X + rnorm(300))
+
+> df <- tibble(X = runif(300)) %>% mutate(Y = 5 + 3*X + rnorm(300))
+
+| Excellent work!
+
+  |=================                                                                                                      |  14%
+| In the code you just ran, you set the *true* data generating process for Y using mutate.
+| 
+| What is the *true* value of beta1 (the effect of a one-unit increase in X on Y)?
+
+> 3
+[1] 3
+
+| Nice work!
+
+  |=====================                                                                                                  |  18%
+| Use feols() to run a regression of Y on X using your data df (which is just a single sample generated using the true DGP) and
+| store the result as one_samp
+
+> feols(df)
+Error in feols(df) : 
+  You must provide the argument 'data' (currently it is missing).
+> feols(Y ~ X, data = df)
+OLS estimation, Dep. Var.: Y
+Observations: 300 
+Standard-errors: IID 
+            Estimate Std. Error t value  Pr(>|t|)    
+(Intercept)  5.09913   0.118855 42.9021 < 2.2e-16 ***
+X            2.73437   0.200453 13.6409 < 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.98213   Adj. R2: 0.382328
+
+| Not quite, but you're learning! Try again. Or, type info() for more options.
+
+| Use feols() (not lm()) to run a regression of Y on X, with data = df, and store the result using <- as one_samp
+
+> one_samp < feols(Y ~ X, data = df)
+Error: object 'one_samp' not found
+> one_samp < feols(Y ~ X, data = df)
+Error: object 'one_samp' not found
+> one_samp <- feols(Y ~ X, data = df)
+
+| Keep up the great work!
+
+  |==========================                                                                                             |  21%
+| You can get just the named vector of coefficients out of a regression object using the coef() function.
+| 
+| You can then get the specific coefficient you want using [['variablename']] . Store the coefficient on X as beta1:
+| 
+| beta1 <- coef(one_samp)[['X']]
+| 
+| (usually for a vector you'd just need single brackets [] but we want to get rid of that name)
+
+> beta1 <- 3(one_samp)[['X']]
+Error: attempt to apply non-function
+> beta1 <- coef(one_samp)[['X']]
+
+| You nailed it! Good job!
+
+  |==============================                                                                                         |  25%
+| You can get just the vector of standard errors from a feols regression with model$se, and get the standard error for the
+| specific coefficient you want with the same [['variablename']] method we just used for the coefficient.
+| 
+| Use this code to get the standard error of beta1 and store it:
+| 
+| se_beta1 <- one_samp$se[['X']]
+
+> 
+> se_beta1 <- one_samp$se[['X']]
+
+| That's a job well done!
+
+  |==================================                                                                                     |  29%
+| Now have R show you the value of beta1
+
+> beta1
+[1] 2.734374
+
+| You are quite good my friend!
+
+  |======================================                                                                                 |  32%
+| beta1 is not exactly 3. What is this an example of?
+
+1: Endogeneity
+2: Sampling variation
+3: Not enough information
+4: Both sampling variation and endogeneity
+
+Selection: 2
+
+| Keep working like that and you'll get there!
+
+  |==========================================                                                                             |  36%
+| We are going to perform a hypothesis test on beta1, which was estimated from a sample of 300 observations. What would be the
+| most appropriate null distribution to use?
+
+1: Normal
+2: F distribution
+3: t distribution
+
+Selection: 1
+
+| Perseverance, that's the answer.
+
+  |===============================================                                                                        |  39%
+| Keeping in mind that you've already got the coefficient saved as beta1 and the standard error saved as se_beta1, calculate the
+| z-score for a test of whether beta1 = 3.
+
+> beta1 - 3 / se_beta1
+[1] -12.2317
+
+| Give it another try. Or, type info() for more options.
+
+| The formula for a z-score is (estimate - null value)/s.e.
+
+> (beta1 - 3) / se_beta1
+[1] -1.325126
+
+| All that hard work is paying off!
+
+  |===================================================                                                                    |  43%
+| In a moment we're going to calculate the proportion of the standard normal distribution that is to the right of the *absolute
+| value* of your z-score.
+| 
+| In order to reject the null at the 95% confidence level with a *two-sided* test, or in other words to get a p-value of .05 or
+| less, this proportion needs to be below...
+| 
+| (put your answer as a decimal, i.e. .4 instead of 40%)
+
+> 0.05 * -1.325
+[1] -0.06625
+
+| Give it another try.
+
+| For a 95% confidence level and a two-sided test, to reject the null you want 5% in *both tails*, meaning how much in *just
+| one* tail?
+
+> 0.025
+[1] 0.025
+
+| You are quite good my friend!
+
+  |=======================================================                                                                |  46%
+| You can get the proportion of the distribution to the right of the absolute value of a z-score with the pnorm function.
+| 
+| pnorm(z) gives the proportion of the standard normal that is to the left of z, so 1-pnorm(z) gives the proportion to the
+| right. So keeping in mind we want to use the absolute value:
+| 
+| 1-pnorm(abs(z))
+| 
+| Use this to find the proportion to the right of the absolute value of your z-score.
+
+> 1-pnorm(-1.325126)
+[1] 0.9074353
+
+| You're close...I can feel it! Try it again. Or, type info() for more options.
+
+| Take your z-score code from before, (beta1-3)/se_beta1, and use that to replace the z in the original code.
+
+> 1-pnorm((beta1 - 3) / se_beta1)
+[1] 0.9074354
+
+| Not quite right, but keep trying. Or, type info() for more options.
+
+| Take your z-score code from before, (beta1-3)/se_beta1, and use that to replace the z in the original code.
+
+> 1-pnorm((beta1-3)/se_beta1)
+[1] 0.9074354
+
+| That's not the answer I was looking for, but try again. Or, type info() for more options.
+
+| Take your z-score code from before, (beta1-3)/se_beta1, and use that to replace the z in the original code.
+
+> pnorm((beta1-3)/se_beta1)
+[1] 0.09256462
+
+| You nailed it! Good job!
+
+  |============================================================                                                           |  50%
+| So then, keeping mind that this is a two-tailed test so we want the proportion as far away from the null as your z-score, or
+| farther, on *both sides*, what is the p-value of this test?
+
+> pnorm((beta1-3)/se_beta1)*2
+[1] 0.1851292
+
+| You are amazing!
+
+  |================================================================                                                       |  54%
+| Can you reject the null that beta1 = 3 at the 95% level with a two-sided test?
+| 
+| Write TRUE if you can reject the null and FALSE if you can't, in all capitals.
+
+> TRUE
+[1] TRUE
+
+| You are amazing!
+
+  |====================================================================                                                   |  57%
+| This swirl lesson uses randomly generated data, so not everyone will get the same z-score or significance.
+| 
+| What proportion of people who use this swirl lesson will reject the null of beta1 = 3, even though it's true?
+| 
+| (put your answer as a decimal, i.e. .4 instead of 40%)
+
+> 0.05
+[1] 0.05
+
+| That's correct!
+
+  |========================================================================                                               |  61%
+| Now we are going to work with some data. Use data(storms) to load the storms dataset (from the **dplyr** package)
+
+> data(storms)
+
+| Excellent job!
+
+  |============================================================================                                           |  64%
+| Use vtable() to examine the data.
+| 
+| Hmm, we haven't actually loaded the vtable package yet. No worries, you can access the vtable function without loading the
+| package using packagename::functionname()
+| 
+| vtable::vtable()
+
+> vtable(storms)
+
+| You nailed it! Good job!
+
+  |=================================================================================                                      |  68%
+| Now examine the data using help(storms)
+
+> help(storms)
+
+| All that practice is paying off!
+
+  |=====================================================================================                                  |  71%
+| Let's see if how far east you are relates to wind speed of a storm.
+| 
+| Use feols() to regress wind on longitude and store the result as wind_reg
+
+> wind_reg <- feols(wind ~ longitude, data = storms)
+Error in feols(wind ~ longitude, data = storms) : 
+  The variable 'longitude' is in the RHS of the formula but not in the data set.
+> wind_reg <- feols(wind ~ longitude, data = storms)
+Error in feols(wind ~ longitude, data = storms) : 
+  The variable 'longitude' is in the RHS of the formula but not in the data set.
+> wind_reg <- feols(wind ~ long, data = storms)
+
+| That's a job well done!
+
+  |=========================================================================================                              |  75%
+| Use etable() to look at the regression.
+
+> etable(wind_reg)
+                         wind_reg
+Dependent Var.:              wind
+                                 
+(Intercept)     52.82*** (0.8171)
+long             -0.0128 (0.0122)
+_______________ _________________
+S.E. type                     IID
+Observations               11,859
+R2                        9.24e-5
+Adj. R2                   8.08e-6
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+| You got it right!
+
+  |==============================================================================================                         |  79%
+| What is the standard error on the coefficient on longitude?
+
+1: 0.0134
+2: 2.24e-5
+3: 10010
+4: 53.90
+5: 0.8984
+6: 0.0063
+
+Selection: 1
+
+| You got it right!
+
+  |==================================================================================================                     |  82%
+| Use coefplot() to look at the 95% confidence interval of the coefficient on longitude (called long in the regression). Use the
+| keep option to only look at the longitude coefficient, not the intercept.
+
+> coefplot(wind_reg)
+
+| Give it another try. Or, type info() for more options.
+
+| Take your regression wind_reg and give it to coefplot as its first argument. Then add a keep option set to long, with quotes
+| around long.
+
+> coefplot(wind_reg, keep = long)
+Error in coefplot_prms(object = object, ..., sd = sd, ci_low = ci_low,  : 
+  object 'long' not found
+> coefplot(wind_reg, keep = 'long')
+
+| You are doing so well!
+
+  |======================================================================================================                 |  86%
+| The asterisks indicate whether the p-value on a test of the coefficient is below a certain value. Based on the three stars
+| next to the Intercept, we can reject at the 99% level that the intercept is equal to the null value of... what?
+
+> 52.82
+[1] 52.82
+
+| Not quite! Try again.
+
+| Regression tables by default compare their coefficients to 0.
+
+> -0.0128
+[1] -0.0128
+
+| Not exactly. Give it another go.
+
+| Regression tables by default compare their coefficients to 0.
+
+> 0
+[1] 0
+
+| You got it right!
+
+  |==========================================================================================================             |  89%
+| Use wald() from fixest to test whether the coefficient on longitude is 0.
+| 
+| The first argument in wald is the regression object. The second is a string vector of the names of the variables you want to
+| compare to 0.
+
+> wald(wind_reg, 'long')
+Wald test, H0: nullity of long
+ stat = 1.0958, p-value = 0.29521, on 1 and 11,857 DoF, VCOV: IID.
+| All that hard work is paying off!
+
+  |==============================================================================================================         |  93%
+| Load the multcomp library using library(multcomp)
+
+> library(multcomp)
+
+| You are amazing!
+
+  |===================================================================================================================    |  96%
+| Now use glht() from multcomp to test whether the coefficient on longitude is equal to 5. Now, instead of just listing the
+| variable name in the second argument, write your null hypothesis, for example X = 10 would test the null that the coefficient
+| on X is equal to 10.
+| 
+| You'll also need to pass glht to summary(). A good format for doing all of this would look like:
+| 
+| mymodel %>% glht('X = 10') %>% summary()
+
+> wind_reg %>% glht('X = 5') %>% summary()
+Error: multcomp:::chrlinfct2matrix: variable(s) ‘X’ not found
+> wind_reg %>% glht('long = 5') %>% summary()
+
+	 Simultaneous Tests for General Linear Hypotheses
+
+Fit: feols(fml = wind ~ long, data = storms)
+
+Linear Hypotheses:
+          Estimate Std. Error t value Pr(>|t|)    
+long == 5 -0.01276    0.01218  -411.4   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+(Adjusted p values reported -- single-step method)
+
+
+| Perseverance, that's the answer.
+
+  |=======================================================================================================================| 100%
+| What if we have heteroskedasticity? Rerun your code from the previous step, but instead of sending wind_reg directly, take
+| your wind_reg code feols(wind~long, data = storms) and add a vcov = 'hetero' option to estimate heteroskedasticity-robust
+| standard errors.
+
+> feols(wind~long, data = storms, vcov = 'hetero')
+OLS estimation, Dep. Var.: wind
+Observations: 11,859 
+Standard-errors: Heteroskedasticity-robust 
+             Estimate Std. Error  t value  Pr(>|t|)    
+(Intercept) 52.820268   0.713069 74.07457 < 2.2e-16 ***
+long        -0.012755   0.011196 -1.13930    0.2546    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 26.2   Adj. R2: 8.079e-6
+
+| You're the best!
