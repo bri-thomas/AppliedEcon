@@ -1,0 +1,161 @@
+
+CONTROLS ON ENDOGENEITY
+
+We believe that our true model looks like this: Y = β0 + β1 * X + ε
+  Where ε is everything that determines Y other than X
+  If X is related to some of those things, we have endogeneity
+  Estimating the above model by OLS, it will mistake the effect of those other things for the effect of X, and our estimate of ^β1
+    won't represent the true β1 no matter how many observations we have
+
+One way we can solve this problem is through the use of control variables
+  What is the 'other things' in the ε that is explained by X is taken out and put as a X2, this becomes a control variable
+  So the task of solving our endogeneity problems in estimating β1 using ^β1 comes down to us finding all the elements of ε that are related to X
+    and adding them to the model
+  As we add them, they leave ε and hopefully we end up with a version of ε that is no longer related to X
+  If cov(X,ε) = 0, then we have an unbiased estimate!
+    (of course, we have no way of checking if that's true - it's based on what we think the data generating process looks like)
+    
+Controlling for a variable works by removing variation in X and Y that is explained by the control variable
+  So our estimate of ^β1 is based on just the variation in X and Y that is unrelated to the control variable
+
+EXAMPLE:
+The true effect is β1 = 3
+  Notice Z is binary and is related to X and Y but isn't in the model!
+
+tib <- tibble(Z = 1*(rnorm(1000) > 0)) %>%
+  mutate(X = Z + rnorm(1000)) %>%
+  mutate(Y = 2 + 3*X + 2*Z + rnorm(1000))
+feols(Y~X, data = tib) %>%
+  etable()
+ 
+'''
+##                                 .
+## Dependent Var.:                 Y
+##                                  
+## (Intercept)     2.756*** (0.0461)
+## X               3.421*** (0.0383)
+## _______________ _________________
+## S.E. type                     IID
+## Observations                1,000
+## R2                        0.88897
+## Adj. R2                   0.88886
+'''
+
+To remove what part of X and Y is explained by Z, we can get the mean of X and Y by values of Z
+tib <- tib %>%
+  group_by(Z) %>% 
+  mutate(Y_mean = mean(Y), X_mean = mean(X))
+head(tib)
+
+'''
+## # A tibble: 6 x 5
+## # Groups:   Z [2]
+##       Z       X      Y Y_mean  X_mean
+##   <dbl>   <dbl>  <dbl>  <dbl>   <dbl>
+## 1     1  0.855   5.98    6.91  0.967 
+## 2     1 -1.59   -0.226   6.91  0.967 
+## 3     1  0.806   6.08    6.91  0.967 
+## 4     1 -0.0302  2.94    6.91  0.967 
+## 5     0 -0.490  -0.997   1.95 -0.0121
+## 6     0 -0.512   0.383   1.95 -0.0121
+'''
+
+Now, Y_mean and X_mean are the mean of Y and X for the values of Z, i.e. the part of Y and X explained by Z. 
+So subtract those parts out to get residuals Y_res and X_res!
+
+tib <- tib %>%
+  mutate(Y_res = Y - Y_mean, X_res = X - X_mean)
+head(tib)
+
+'''
+## # A tibble: 6 x 7
+## # Groups:   Z [2]
+##       Z       X      Y Y_mean  X_mean  Y_res  X_res
+##   <dbl>   <dbl>  <dbl>  <dbl>   <dbl>  <dbl>  <dbl>
+## 1     1  0.855   5.98    6.91  0.967  -0.928 -0.113
+## 2     1 -1.59   -0.226   6.91  0.967  -7.14  -2.55 
+## 3     1  0.806   6.08    6.91  0.967  -0.827 -0.161
+## 4     1 -0.0302  2.94    6.91  0.967  -3.98  -0.997
+## 5     0 -0.490  -0.997   1.95 -0.0121 -2.95  -0.478
+## 6     0 -0.512   0.383   1.95 -0.0121 -1.57  -0.499
+'''
+
+what is the result that we get after the residual transformation?
+
+feols(Y_res ~ X_res, data = tib) %>%
+  etable()
+  
+'''
+## Dependent Var.:             Y_res
+##                                  
+## (Intercept)     6.13e-18 (0.0319)
+## X_res           3.030*** (0.0319)
+## _______________ _________________
+## S.E. type                     IID
+## Observations                1,000
+## R2                        0.90060
+## Adj. R2                   0.90050
+'''
+
+    Exercise:
+    Describe the steps necessary to estimate the effect of Exports on GrowthRatewhile controlling for AmountofConflict
+      (a continuous variable). There are three "explain/regress" steps and two "subtract" steps.
+
+    1st: Use Exports to explain AmountofConflict / Regress Exports on AmountofConflict
+    m1 <- feols(exports~armedconflict, data = data)
+    2nd: Then Subtract the Exports that is being explained by AmountofConflict / Subtract Preds. Out / Take only the residuals
+    data <- data %>%
+     mutate(export_resids = resid(m1)
+    3nd: Use GrowthRate to explain AmountofConflict
+    m2 <- feols(growthrate~armedconflict, data = data)
+    4th: Then Subtract the Exports that is being explained by Amountofconflict / Subtract Preds. Out / Take only the Residuals
+    data <- data %>%
+      mutate(export_growthrate = resid(m2)
+    5th: Use Residuals of GrowthRate to Residuals explain Exports
+    m <- feols(exports~growthrate, data = data)
+
+Validation of Whether we have Solved the Problem
+  CAUSAL DIAGRAMS
+    "What Do i have to control for to solve the endogeneity problem" is an important and difficult question!
+    To answer it we need to think about the data-generating process
+    One way to do that is to draw a causal diagram:
+      Describes the variables responsible for generating data and hwo they cause each other
+    Drawing the Diagram
+      - Endogeneity is all about the alternate reasons why two variables might be related in ways other than the causal effect we want
+      - We can represent all the reasons two variables are related with a diagram
+      - Put down on paper how you think the world works, and where you think the data came from! THis is economic modeling but with less math
+      Steps:
+        1. List out all the variables relevant to the DGP (including the ones we can't measure or put our finger on!)
+        2. Draw arrows between them reflecting what causes what else
+        3. list all the paths from X to Y - these paths are reasons why X and Y are related!
+        4. Control for at least one variable on each path you want to close (isn't the effect you want)
+      - Ways to check whether a Diagram is good or complete
+      Steps: 
+        1. Test the Diagram using Placebo Tests
+        2. Partial Indentification
+          We DON'T close all pathways in order to figure out consequences
+          Omitted Variable Bias based on cov(X,Z) and cov(Y,Z)
+ 
+Exercise: C <- U1 -> D -> Y, C -> X <- A -> Y, X -> Y <- B
+List all the paths from X to Y
+X -> Y
+X <- A -> Y
+X <- C <- U1 -> D -> Y
+
+Draw a graph with five variables on it: X, Y, A, B, C. Then draw arrows at them completely at random (except to ensure there's no loop). Then list every
+  path from X to Y and say what you'd need to control for to identify the effect. X -> Y must also be a path.
+  
+X -> Y
+X -> B -> Y
+X <- A -> Y
+X <- A <- C -> B -> Y
+X -> B <- C -> A -> Y
+
+Control Variable for total effect of X on Y : A
+
+What would you need to control for to estimate the effect of "drinking a glass of wine a day" on "lifespan"
+- background
+- blood pressure level
+- other alcohol consumption
+- cause of death
+- partying behavior
