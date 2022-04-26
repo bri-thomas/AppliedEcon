@@ -1,0 +1,216 @@
+
+MULTIVARIATE REGRESSIONS
+
+Bad Controls
+  There are a few reasons why adding controls when you shouldn't can make your estimate worse:
+  1. Washing Out Too Much Variation
+    - When we control for a variable Z, we wash out all the variation in X and Y associated with that variable
+    - Which means that we can also think of ^β1 from that regression as saying "within the same value of Z,
+    a one-unit change in X raises Y by ^β1"
+    - So we have to think carefully about whether that statement actually makes sense! (concept of 'collinearity'
+    
+    - FOR EXAMPLE:
+    Let's say we want to know the effect of being in the Seattle U business school Albers on Earnings
+    However, we also know that college major is strongly related to whether you're in Albers, and causes your Earnings
+    But if we control for Major, we're saying "within the same major, being in the business school vs. not has a ^β1
+  effect on earnings"
+    What does that even mean? You're comparing econ majors in vs. out of the business school... but who are the econ 
+  majors not in the business school? And who are the English majors in the business school to compare against the 
+  English majors not in Albers?
+    Controlling for major would make the regression impossible to interpret. Plus, it would provide an estimate based 
+  entirely on the few people it can find who are English majors in Albers or Econ majors out of Albers - is that representative?
+  
+    - When adding a control, it's always useful to think about who you're comparing and if that variation exists in the data
+    - In thinking about the effect of being in Albers, we really want to compare people between in-Albers and out-of-Albers majors
+    - Controlling for Major is asking OLS to compare people within majors
+    - So it doesn't really make sense to control for major since we want the effect in there
+    
+  2. Post-Treatment Bias
+    - Remember the control variable diagram
+    - We determined that we needed to control for Locationa dn Background but not Skills. Why? Because Skills is part
+    of the effect we're trying to pick up!
+    - If preschool affect Earnings because it improves your SKills, then we'd count that as being a valid way that 
+    preschool affects earnings
+    - Skills is post-treatment, which means it is cause by treatment
+    
+  3. Collider Bias
+    - On a causal parth from X to Y, if there is a variable on that path where both arrows on either side point at it, that's a
+    collider variable on the path: X <- W -> C <- Z -> Y where the arrows 'collide' at C
+    - If there is a vollider on a path, that path is automatically closed already, but if you control for the collider, it could
+    open it back up. Which means that you can go from identified to endogenous by adding a control!
+    
+    - FOR EXAMPLE:
+    You want to know if programming skills reduce your social skills. So you go to a tech company and test all their employees on 
+    programming and social skills. Let's imagine that the truth is that programming skills and social skills are unrelated. But 
+    you find a negative relationship! What gives? Oops! By surveying only the tech company, you controlled for "works in a tech 
+    company." To do that, you need programming skills, social skills, or both! It's a collider!
+  
+R Script
+survey <- tibble(prog=rnorm(1000),social=rnorm(1000)) %>%
+  mutate(hired = (prog + social > .25))
+basic <- feols(prog~social, data = survey)
+hiredonly <- feols(prog~social, data = survey %>% filter(hired))
+withcontrol <- feols(prog ~ social + hired, data = survey)
+etable(basic, hiredonly, withcontrol)
+
+##                           basic           hiredonly         withcontrol
+## Dependent Var.:            prog                prog                prog
+##                                                                        
+## (Intercept)     0.0193 (0.0331)   1.018*** (0.0444) -0.7485*** (0.0354)
+## social          0.0383 (0.0326) -0.4900*** (0.0433) -0.4245*** (0.0285)
+## hiredTRUE                                             1.727*** (0.0583)
+## _______________ _______________ ___________________ ___________________
+## S.E. type                   IID                 IID                 IID
+## Observations              1,000                 432               1,000
+## R2                      0.00138             0.22937             0.46898
+## Adj. R2                 0.00038             0.22757             0.46792
+
+Goodness of Fit
+  - OLS does as good a job as possible of using X and controls to explain Y, but if residuals are really big, then there could 
+  be a lot of noise in Y that we're not explaining. If the residuals are small, then most of what's going on in Y will be 
+  accounted for.
+
+RSquared
+  - R squared is the square of the correlation between Y and our OLS Predictions of Y
+  - Roughly Though of as 'what proportion of the variance in Y can we explain with the variables in our model?'
+  - It's not a measure of how good the model is, and also not a perfect measure even of predictive power
+  - In both low and high r squared, the true effect is the same, no endogeneity. Only difference is how much other, non X based
+  variation there is in Y
+  - The F Tests
+    - The R squared reveals what was actually going on with those F-tests we did before
+    - An F-test of a regression sees if a regression predicts more accurately than a more restricted regression where some of
+    the coefficients are forced to 0 (or to some other value)
+    - In other words, it might take the R squared of each of these two models and calculate something from them that has a F
+    distribution to test if ^β2 and ^β3 are both zerto at the same time.
+
+F-Tests
+Let's predict some professor salaries
+
+'''
+data(Salaries, package = 'carData')
+unrestricted <- feols(salary ~ yrs.since.phd + yrs.service + sex, data = Salaries)
+restricted <- feols(salary ~ yrs.since.phd, data = Salaries)
+
+fitstat(unrestricted, 'r2')
+
+## R2: 0.195102
+
+fitstat(restricted, 'r2')
+
+## R2: 0.175755
+
+##                          unrestricted            restricted
+## Dependent Var.:                salary                salary
+##                                                            
+## (Intercept)     82,875.9*** (4,800.6) 91,718.7*** (2,765.8)
+## yrs.since.phd      1,552.8*** (256.1)      985.3*** (107.4)
+## yrs.service           -649.8* (254.0)                      
+## sexMale            8,457.1. (4,656.1)                      
+## _______________ _____________________ _____________________
+## S.E. type                         IID                   IID
+## Observations                      397                   397
+## R2                            0.19510               0.17575
+## Adj. R2                       0.18896               0.17367
+
+
+r2_unres <- fitstat(unrestricted, 'r2')$r2 %>% unname()
+r2_res <- fitstat(restricted, 'r2')$r2 %>% unname()
+
+# Calculate by hand
+((r2_unres - r2_res)/2) / ((1 - r2_unres)/(397 - 4))
+
+## [1] 4.723259
+
+# Have the wald() function do it for us (note F is the same!)
+
+  wald(unrestricted, c('yrs.service','sexMale'))
+
+## Wald test, H0: joint nullity of yrs.service and sexMale
+##  stat = 4.72326, p-value = 0.009397, on 2 and 393 DoF, VCOV: IID.
+'''
+
+F tests are broader, too - you can test other restrictions on coefficients, no just seeing if they're all 0
+Do yrs.since.phd and yrs.service have the same effect but of opposite signs (in other words, yrs.since.phd + yrs.service = 0? NO!)
+
+'''
+library(multcomp)
+# Generalized Linear Hypothesis Test
+glht(unrestricted, 'yrs.since.phd + yrs.service = 0') %>% summary()
+## 
+##      Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: feols(fml = salary ~ yrs.since.phd + yrs.service + sex, data = Salaries)
+## 
+## Linear Hypotheses:
+##                                  Estimate Std. Error t value Pr(>|t|)    
+## yrs.since.phd + yrs.service == 0    903.0      109.7   8.232 2.66e-15 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+'''
+
+Multivariate OLS in R
+  Conveniently, adding more variables ot an OLS model in R is just an issue of... literally adding them
+
+'''
+model <- feols(salary ~ yrs.since.phd + yrs.serve + sex, data = Salaries)
+# Look at a summary of the statistic
+fitstat(model, 'r2')
+
+## R2: 0.195102
+
+# Get the actual value out
+fitstat(model, 'r2')$r2
+
+##       r2 
+## 0.195102
+'''
+
+- We already did one by hand! Using the R squared values
+- We can also use wald() to test a set of coefficient being jointly 0
+- Or glht() in multcomp for testing more complex equations, or things not tested against 0 (rearrange the equation to have a
+constant on one side)
+- To account for heteroskedasticity, you can use vcov = 'hetero' in the feols() you feed either, or set vcov directly in wald()
+
+'''
+wald(model, c('X1', 'X2'))
+glht(model, 'X1 = 3')
+glht(model, 'X1 - X2 = 0')
+'''
+
+Predictions and Residuals
+  We can get a vector of predictions from a regression object with predict() (or with, feols(), optionally model$fitted.values)
+  A vector of residuals with resid() or optionally with feols(), model$residuals
+  This turns out to be handy often in applied work! For example, maybe we want to plot those predicted values or residuals!
+  Although for what we've covered so far it's mostly just good for doing R squared or controlling by hand
+  Which can be good to get a feel for how this all works. Or just to learn how to use predict() and resid()
+
+'''
+yrs_model <- feols(yrs.since.phd ~ yrs.service + sex, data = Salaries)
+salary_model <- feols(salary ~ yrs.service + sex, data = Salaries)
+my_data <- tibble(yrs_resid = resid(yrs_model),
+                  salary_resid = resid(salary_model))
+resid_model <- feols(salary_resid ~ yrs_resid, data = my_data)
+etable(resid_model)
+
+##                        resid_model
+## Dependent Var.:       salary_resid
+##                                   
+## (Intercept)     2.81e-10 (1,365.6)
+## yrs_resid       1,552.8*** (255.5)
+## _______________ __________________
+## S.E. type                      IID
+## Observations                   397
+## R2                         0.08552
+## Adj. R2                    0.08320
+
+fitstat(model, 'r2')$r2
+
+##       r2 
+## 0.195102
+
+predicted_values <- predict(model)
+cor(predicted_values,Salaries$salary)^2
+
+## [1] 0.195102
+'''
