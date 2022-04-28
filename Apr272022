@@ -1,0 +1,280 @@
+
+BINARY VARIABLES AND FUNCTIONAL FORM
+! literally the most important thing to learn... and what you will actually do most of the time
+
+The Right Hand Side
+  Economists generally refer to a regression as having a "left-hand-side" of the dependent variable Y, and a "right-hand-side" of all the independent 
+ stuff, like β0 + β1X + β2Z +ε.
+  So far, we've just tossed stuff on the right-hand side and called it our treatment variable or a control variable without thinking too much harder
+ about it
+  Three features of the Righ-Hand Side:
+  - What if the variable is categorical or binary? (binary variables)
+  - What if the variable has a non-linear effect on Y (polynomials and logarithms)
+  - What if the effect of one variable depends on the value of another variable (interaction terms)
+
+Binary Data
+  - A variable is binary if it only has two values - 0 or 1 (or "No" or "Yes", etc.)
+Did you get the treatment? Yes / No
+Do you live in the US? Yes / No
+Is a floating exchange rate in effect? Yes / No
+  - When a binary variable is an independent variable, what we are often interested in doing is comparing means:
+Is mean income higher inside the US or outside?
+Is mean height higher for kids who got a nutrition supplement or those who didn't?
+Is mean GDP growth higher with or without a floating exchange rate?
+  - Example: Let's compare log earnings in 1993 between married people 30 or older vs. never-married people 30 or older
+  
+  R script: Comparison of Means
+'''
+  data(PSID, package = 'Ecdat')
+  PSID <- PSID %>%
+   filter(age >= 30, married %in% c('married','never married'), earnings > 0) %>%
+   mutate(married  = married == 'married')
+  PSID %>%
+    group_by(married) %>%
+    summarize(log_earnings = mean(log(earnings)))
+
+## # A tibble: 2 x 2
+##   married log_earnings
+##   <lgl>          <dbl>
+## 1 FALSE           9.26
+## 2 TRUE            9.47
+'''
+  - The difference between the means follows a t-distribution under the null that they're identical
+  - So of course we can do a hypothesis test of whether they're different
+
+'''
+  t.test(log(earnings) ~ married, data = PSID, var.equal = TRUE)
+  
+## 
+##     Two Sample t-test
+## 
+## data:  log(earnings) by married
+## t = -3.683, df = 2828, p-value = 0.0002348
+## alternative hypothesis: true difference in means between group FALSE and group TRUE is not equal to 0
+## 95 percent confidence interval:
+##  -0.32598643 -0.09947606
+## sample estimates:
+## mean in group FALSE  mean in group TRUE 
+##            9.255160            9.467891
+
+  feols(log(earnings) ~ married, data = PSID)
+  
+## OLS estimation, Dep. Var.: log(earnings)
+## Observations: 2,830 
+## Standard-errors: IID 
+##             Estimate Std. Error   t value   Pr(>|t|)    
+## (Intercept) 9.255160   0.052891 174.98636  < 2.2e-16 ***
+## marriedTRUE 0.212731   0.057760   3.68305 0.00023478 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## RMSE: 1.13028   Adj. R2: 0.004422
+'''
+  - The intercept gives the mean for the non-married group
+  - The coefficient on marriedTRUE gives the married minus non-married difference
+  - The t-stat and p-value on that coefficient are exactly the same as that t.test (except the t is reversed; same deal)
+  - i.e. the coefficient on a binary variable in a regression gives the difference in means
+  - If we'd defined it the other way, with "not married" as the independent variable, the intercept would be the mean for the married group 
+  (i.e. "not married = 0"), and the coefficient would be the exact same but times − 1 (same difference, just opposite direction!)
+  
+Looking and Regressions with more than Two Categories
+  - That interpretation - dropping one and making the other relative to that, conveniently extends to multi-category variables
+  - Why stop at binary categorical variables? There are plenty of categorical variables with more than two values
+  - What is your education level? What is your religious denomination? What continent are you on?
+  - We can put these in a regression by turning each value into its own binary variable
+  (and then dropping one so the coefficients on the others give you the difference with the omitted one)
+
+'''
+tib <- tibble(group = sample(LETTERS[1:4], 10000, replace = TRUE)) %>%
+  mutate(Y = rnorm(10000) + (group == "A") + 2*(group == "B") + 3*(group == "C") + 4*(group == "D"))
+feols(Y ~ group, data = tib)
+
+## OLS estimation, Dep. Var.: Y
+## Observations: 10,000 
+## Standard-errors: IID 
+##             Estimate Std. Error  t value  Pr(>|t|)    
+## (Intercept) 0.971877   0.020203  48.1051 < 2.2e-16 ***
+## groupB      1.026504   0.028566  35.9346 < 2.2e-16 ***
+## groupC      2.007217   0.028400  70.6771 < 2.2e-16 ***
+## groupD      3.033591   0.028557 106.2283 < 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## RMSE: 1.00652   Adj. R2: 0.555075
+'''
+  - To change the reference group there are two different ways
+
+'''
+tib <- tib %>% mutate(group = factor(group, levels = c('B','A','C','D')))
+feols(Y ~ group, data = tib)
+# or
+tib <- tibble(group = sample(LETTERS[1:4], 10000, replace = TRUE)) %>%
+  mutate(Y = rnorm(10000) + (group == "A") + 2*(group == "B") + 3*(group == "C") + 4*(group == "D"))
+feols(Y ~ group, data = tib)
+feols(Y ~ i(group ref = 'b'), data = tib)
+
+## OLS estimation, Dep. Var.: Y
+## Observations: 10,000 
+## Standard-errors: IID 
+##              Estimate Std. Error  t value  Pr(>|t|)    
+## (Intercept)  1.998382   0.020195  98.9540 < 2.2e-16 ***
+## groupA      -1.026504   0.028566 -35.9346 < 2.2e-16 ***
+## groupC       0.980713   0.028394  34.5394 < 2.2e-16 ***
+## groupD       2.007086   0.028552  70.2970 < 2.2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## RMSE: 1.00652   Adj. R2: 0.555075
+'''
+
+Interpreting OLS
+  - To think about the right-hand-side, let's go back to our original interpretation of an OLS coefficient
+      ~ Y = β0 + β1X + ε ~
+  - A one-unit change in X is associated with a β1 - unit change in Y
+  - This logic still works with binary variables since "a one-unit change in X" means "changing X from No to Yes"
+  - Notice that this assumes that a one-unit change in X always has the same effect on β1 no matter what else is going on
+  But what if this is not true?
+  
+Functional Form
+  - We talked before about times when a linear model like standard OLS might not be sufficient
+  - However, as long as those non-linearities are on the right hand side, we can fix the problem easily but just having X enter non-linearly! 
+  - Run it through a transformation! The most common transformations by far are polynomials and logarithms
+  Polynomials
+    β1X is a "first order polynomial" - there's one term
+    β1X + β2X^2 is a "second order polynomial" or a "quadratic" - two terms (note both included, it's not just X^2)
+    β1X + β2X^2 + β3X^3 is a third-order or cubic, etc.
+    - What do they do?
+      ~ The more polynomial terms, the more flexible the line can be. With enough terms you can mimic any shape of relationship
+      ~ Of course, if you just add a whole buncha terms, it gets very noisy, and prediction out-of-sample gets very bad
+      ~ Keep it minimal - quadratics are almost always enough, unless you have reason to believe there's a true more-complex relationship. 
+      (You can try adding higher-order terms and see if they make a difference)
+    Interpret polynomials using the derivative 
+    - ∂Y/∂X will be different depending on the value of X (as it should! Notice in the graph that the slope changes for different values of X)
+      ~ Y = β1X+ β2X^2
+      ~ ∂Y/∂X = β1 + 2β2^X
+    - So at X = 0, the effect of a one-unit change in X is β1. At X = 1, it's β1 + β2. At X = 5 it's β1 + 5β2. 
+  In R Script 
+  - We can add an I() function to our regression to do a calculation on a variable before including it. So I(X^2) adds a squared term
+  - There's also a poly() function but avoid it - it does something slightly different
+# Linear
+feols(Y ~ X, data = df)
+# Quadratic
+feols(Y ~ X + I(X^2), data = df)
+# Cubic
+feols(Y ~ X + I(X^2) + I(X^3), data = df)
+    
+  Example: What's the effect of a one-unit change in X at X = 0, X = 1, and X = 2 for each of these?
+'''
+##                 feols(Y ~ X, dat.. feols(Y ~ X + I(.. feols(Y ~ X + I(..
+## Dependent Var.:                  Y                  Y                  Y
+##                                                                         
+## (Intercept)      7.285*** (0.5660)   -0.1295 (0.3839)    0.0759 (0.5091)
+## X               -8.934*** (0.1953)   0.9779* (0.3831)    0.4542 (0.9331)
+## X square                           -2.003*** (0.0752) -1.738*** (0.4368)
+## X cube                                                  -0.0354 (0.0574)
+## _______________ __________________ __________________ __________________
+## S.E. type                      IID                IID                IID
+## Observations                   200                200                200
+## R2                         0.91357            0.98122            0.98126
+## Adj. R2                    0.91313            0.98103            0.98097    
+'''
+  We're looking at the slope of X in each model
+    For the first model the slope of X is the same at all values of X which is -8.934
+    For the second model the slope of X is different at different values of as the derivative of a Squared model is 0.9779 + 2*(-2.003)*X
+  ... therefore
+  At X = 0, the effect is 0.9779 + 2*(-2.003)*(0) = 0.9779
+  At X = 1, the effect is 0.9779 + 2*(-2.003)*(1) = 0.9779 - 4.006 = -3.0254
+  At X = 2, the effect is 0.9779 + 2*(-2.003)*(2) = 0.9779 - 8.012 = -7.0288
+  
+  Logarithms
+  - Another common transformation, both for dependent and independent variables, is to take the logarithm
+  - This has the effect of pulling in extreme values from strongly right-skewed data and making linear relationships pop out
+  - Income, for example, is almost always used with a logarithm
+  - It also gives the coefficients a nice percentage-based interpretation
+  So how can we predict them?
+    - The key is to remember that log(X) + a ≈ log((1 + a)X), meaning that a 'a'- unit change in log(X) is similar to a 'a * 100) change in X
+    - So, walk through our 'one-unit change in the variable' logic from before, but whenever we hit a log, change that into a percentage!
+  Y = β0 + β1log(X) A one-unit change in log(X), or a 100% change in X, is associated with a β1 unit change in Y
+  log(Y) = β0 + β1X a one-unit change in X is associated with a β1 × 100% change in Y 
+  log(Y) = β0 + β1log(X) A one-unit change in log(X), or a or a 100% change in X, is associated with a β1 unit change in log(Y), or a β1 × 100% change in Y
+
+Interaction Terms
+  For both polynomials and logarithms, the effect of a one-unit change in X differs depending on its current value (for logarithms, a 1-unit change in 
+    X is different percentage changes in X depending on current value)
+  But why stop there? Maybe the effect of X differs depending on the current value of other variables!
+  Enter interaction terms!
+      ~ Y = β0 + β1X + β2Z + β3X*Z + ε ~
+  Interaction terms are a little tough but also extremely important. Expect to come back to these slides, as you're almost certainly going to use 
+    interaction terms in both of your major projects this term
+  Notes on Interaction Terms:
+    - Like with polynomials, the coefficients on their own now have little meaning and must be evaluated alongside each other. β1 by itself is just 
+    "the effect of X when Z = 0", not "the effect of X"
+    - Yes, you do almost always want to include both variables in un-interacted form and interacted form. Otherwise the interpretation gets very thorny
+    - Interaction effects are poorly powered. You need a lot of data to be able to tell whether an effect is different in two groups. If N observations 
+    is adequate power to see if the effect itself is different from zero, you need a sample of roughly 16 × N to see if the difference in effects is 
+    nonzero. Sixteen times!!
+    - It's tempting to try interacting your effect with everything to see if it's bigger/smaller/nonzero in some groups, but because it's poorly powered, 
+    this is a bad idea! You'll get a lot of false positives
+  
+  How to use Binary Variables in R Script:  
+  - Binary variables in R (on the right-hand-side) you can just treat as normal variables
+  - Categorical variables too (although if it's numeric you may need to run it through factor() first, or i() in feols())
+  - In feols() you can specify which group gets dropped using i() and setting ref in it
+'''
+# drops married = FALSE
+feols(log(earnings) ~ married, data = PSID)
+# drops married = TRUE
+feols(log(earnings) ~ i(married, ref = 'TRUE'), data = PSID)
+'''
+  - You can also use I() to specify binary variables in-model, or case_when() to create categorical variables
+  - case_when works in steps: the first one that applies to you, you get, so that TRUE at the end catches "everyone else"
+'''
+PSID <- PSID %>%
+  mutate(education  = case_when(
+    educatn < 12 ~ 'No High School Degree',
+    educatn == 12 ~ 'High School Degree',
+    educatn < 16 ~ 'Some College',
+    educatn == 16 ~ 'Bachelor\'s Degree',
+    TRUE ~ 'Graduate Degree'
+  ))
+feols(log(earnings) ~ education + I(kids > 0), data = PSID) |> etable()
+
+##                             feols(log(earning..
+## Dependent Var.:                   log(earnings)
+##                                                
+## (Intercept)                   10.06*** (0.0701)
+## educationGraduateDegree        0.1673* (0.0842)
+## educationHighSchoolDegree   -0.5433*** (0.0658)
+## educationNoHighSchoolDegree -0.9404*** (0.0826)
+## educationSomeCollege        -0.2893*** (0.0699)
+## I(kids>0)TRUE               -0.2922*** (0.0548)
+## ___________________________ ___________________
+## S.E. type                                   IID
+## Observations                              2,803
+## R2                                      0.09907
+## Adj. R2                                 0.09746
+'''
+  How to use Interaction Term in R Script:  
+  - X*Z will include X, Z, and also their interaction
+  - If necessary, X:Z is the interaction only, but you rarely need this. However, it's handy for referring to the interaction term in linearHypothesis!
+  - In feols() the i() function is a very powerful way of doing interactions
+'''
+feols(Y ~ X*Z, data = df)
+feols(Y ~ X + X:Z, data = df)
+feols(Y ~ i(Z, X), data = df)
+feols(Y ~ i(Z, X), data = df) |> iplot()
+'''
+  Testing Groups by their Binary Variables in Category as well as their Interaction in R Script:
+  - wald() can be handy for testing groups of binary variables for a categorical
+  - Also good for testing all the polynomial terms, or testing if the effect of X is significant at a certain value of Z
+'''
+# Is the education effect zero overall?
+m1 <- feols(log(earnings)~educatn, data = PSID)
+wald(m1, 'educatn')
+
+# Does X have any effect?
+m2 <- feols(Y ~ X + I(X^2) + I(X^3), data = df)
+wald(m2, 'X') # Gets all coefficients with an 'X' anywhere in the name - check this is right!
+
+# Is the effect of X significant when Z = 5?
+library(multcomp)
+m3 <- lm(Y ~ X*Z, data = df)
+glht(m3, 'X + 5*X:Z= 0') %>% summary()
+'''
