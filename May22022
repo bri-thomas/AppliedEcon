@@ -1,0 +1,76 @@
+
+PRACTICE FOR THE MIDTERM
+
+(6) What should the regression look like?
+   - What kinds of functional form checks should we do to see if we want polynomials or logs?
+   - How should we construct the regression?
+
+  We might want to regress I(personSearch == 'YES' | vehicleSearch == 'YES') on I(race == 'black'), neighborhood, and problem
+  - Let's first look at a basic comparison of means just to see what we're looking at.
+  - Keep in mind that the result will still be biased! We haven't really controlled for WhatDoing, and we've shut off the Black → Stopped → Searched 
+  pathway (plus, should we have gone back and put Gender in there and figured out whether to control for that too?)
+  - These are all binary variables, we can't really do logs or polynomials of them
+  - Unfortunately, going through the work of laying out what regression we should run doesn't always give us a regression that's feasible! Often what 
+  we can run has problems still
+  - We can run another analysis with an interaction between Black and Problem
+
+MplsStops <- MplsStops %>%
+  mutate(Stopped = personSearch == 'YES' | vehicleSearch == 'YES',
+         Black = race == 'Black')
+m1 <- feols(Stopped ~ Black, data = MplsStops)
+m2 <- feols(Stopped ~ Black + problem + neighborhood, data = MplsStops)
+m3 <- feols(Stopped ~ Black*problem + neighborhood, data = MplsStops)
+
+(7) What is the result? (what tests should we look at?)
+  - Before we look at the result, what results might we see and how would we interpret them?
+    - What checks would we want to do?
+    - What tests should we run?
+    - How should we think about whether we want to use robust standard errors?
+
+The Result: Interpret these coefficients (keep in mind Neighborhood is not shown)!
+  - Do we think that the coefficient on Black is likely to be biased up or down?
+##                                            m1                  m2
+## Dependent Var.:                       Stopped             Stopped
+##                                                                  
+## BlackTRUE                  0.1357*** (0.0034)  0.1293*** (0.0036)
+## problemtraffic                                -0.0829*** (0.0034)
+## BlackTRUE x problemtraffic                                       
+## __________________________ __________________ ___________________
+## S.E. type                                 IID                 IID
+## Observations                           43,699              43,699
+## R2                                    0.03617             0.06981
+## Adj. R2                               0.03614             0.06793
+##                                             m3
+## Dependent Var.:                        Stopped
+##                                               
+## BlackTRUE                   0.2030*** (0.0053)
+## problemtraffic             -0.0394*** (0.0041)
+## BlackTRUE x problemtraffic -0.1287*** (0.0069)
+## __________________________ ___________________
+## S.E. type                                  IID
+## Observations                            43,699
+
+Other Tests
+  We see that officers choose to search stopped Black people much more often than stopped non-Black people, controlling for neighborhood and 
+ the type of problem - 13% more!
+  It also seems like the effect is much stronger for stops the police reported as "suspicious" (20%) rather than "traffic" stops (20-13 = 7%). 
+ The difference (13%) is statistically significant at the .1% level
+  Is the effect of Black still significant for Traffic stops? What test would we run? (Answer: the F-Test)
+
+library(multcomp)
+glht(m3, 'BlackTRUE + BlackTRUE:problemtraffic = 0') %>% summary()
+## 
+##      Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: feols(fml = Stopped ~ Black * problem + neighborhood, data = MplsStops)
+## 
+## Linear Hypotheses:
+##                                           Estimate Std. Error t value Pr(>|t|)
+## BlackTRUE + BlackTRUE:problemtraffic == 0 0.074229   0.004621   16.06   <2e-16
+##                                              
+## BlackTRUE + BlackTRUE:problemtraffic == 0 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+Yep, still significant at the .1% level! A 7% gap is pretty big, too.
+
