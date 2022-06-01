@@ -1,0 +1,47 @@
+
+FINALS REVIEW
+
+1. CATEGORICAL PREDICTORS
+Y = β0 + β1*SU + β2*PLU + β3*CORNISH + β4X
+Avg. Y for U.W = β0
+Avg. Y for S.U = β0 + β1
+DIFF of S.U vs. U.W = (β0 + β1) - (β0) = β1
+  in this model, Y <- College -> X -> Y where we control for College
+
+2. POLYNOMIALS
+Y = β0 + β1*X
+'The Effect of X' is β1
+Y = β0 + β1*X + β2*X^2
+  which in r studio it would be denoted as
+  ~ feols(Y ~ X + I(X^2))
+dy/dx = β1 + 2(β2*X) // Y = β0
+  Test the Effect at a Value in r studio
+  ~ glht(model, 'X + 2*X*3')
+  Does the Variable Matter Overall
+  ~ wald(model, 'X')
+
+3. INTERACTION TERMS (Test If the effect differs between....)
+Y = β0 + β1*X + β2*Z + β3*X*Z
+  which in r studio would be denoted as
+  ~ feols(Y ~ X*Z)
+dy/dx = β1 + β3Z
+β1 is the effect of X when Z = 0
+β1 + β3 is the effect of X when Z = 1
+β3 is the difference in the effect of X between the Z = 0 and the Z = 1 group
+
+4. LOGARITHMS
+ln(X)
+  a + ln(X) = ln((1 + a)X) if a is smaller < 0.1
+  A 0.05-unit increase in ln(x) is a 5% increase in X
+Y = β0 + β1*ln(X)
+- A 1-unit increase in ln(x) is associated with a β1-unit increase in Y
+  ~ 0.01-unit ____ ln(X) is _______ 0.01 β1-unit _____ Y
+  ~ A 1% _____ X is ______ 0.01 β1-unit _____ Y
+ln(Y) = β0 + β1X
+- A 1-unit increase in X is associated with a β1-unit increase in ln(Y)
+  ~ 0.01 unit ____ X is _____ 0.01 β1-unit ____ in ln(Y)
+  ~ 0.01 unit ____ X is _____ β1% increase in Y
+ln(Y) = β0 + β1*ln(X)
+- A 1-unit increase in ln(X) is associated with a β1-unit increase ln(Y)
+  ~ 1% increase in X is associated with a β1% increase in Y
+
